@@ -1,0 +1,212 @@
+@model LoginandRegisterMVC.Models.BlogDetailsViewModel
+
+@{
+    ViewData["Title"] = Model.Blog.Title;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Blogs" asp-action="Index">Blogs</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.Blog.Title</li>
+        </ol>
+    </nav>
+
+    <!-- Blog Details -->
+    <article class="blog-details">
+        <!-- Blog Title -->
+        <h1 class="display-4 mb-3">@Model.Blog.Title</h1>
+
+        <!-- Blog Meta Information -->
+        <div class="blog-meta-info mb-4 pb-3 border-bottom">
+            <div class="row">
+                <div class="col-md-6">
+                    <!-- Author -->
+                    <div class="mb-2">
+                        <i class="fas fa-user text-primary"></i>
+                        <strong>Posted by:</strong>
+                        @if (Model.Blog.Author != null)
+                        {
+                            <span>@Model.Blog.Author.Username</span>
+                            @if (!string.IsNullOrEmpty(Model.Blog.Author.Role))
+                            {
+                                <span class="badge @(Model.Blog.Author.Role == "Admin" ? "badge-danger" : "badge-secondary") ml-2">
+                                    @Model.Blog.Author.Role
+                                </span>
+                            }
+                        }
+                        else
+                        {
+                            <span>Unknown</span>
+                        }
+                    </div>
+
+                    <!-- Published Date -->
+                    <div class="mb-2">
+                        <i class="fas fa-calendar text-primary"></i>
+                        <strong>Published on:</strong>
+                        <span>@(Model.Blog.PublishedDate?.ToString("MMMM dd, yyyy") ?? Model.Blog.CreatedDate.ToString("MMMM dd, yyyy"))</span>
+                    </div>
+
+                    <!-- Last Updated -->
+                    @if (Model.Blog.LastUpdatedDate > (Model.Blog.PublishedDate ?? Model.Blog.CreatedDate).AddMinutes(1))
+                    {
+                        <div class="mb-2">
+                            <i class="fas fa-edit text-primary"></i>
+                            <strong>Last updated:</strong>
+                            <span>@Model.Blog.LastUpdatedDate.ToString("MMMM dd, yyyy") at @Model.Blog.LastUpdatedDate.ToString("hh:mm tt")</span>
+                        </div>
+                    }
+                </div>
+
+                <div class="col-md-6 text-md-right">
+                    <!-- View Count -->
+                    <div class="mb-2">
+                        <i class="fas fa-eye text-primary"></i>
+                        <strong>Views:</strong>
+                        <span class="badge badge-info">@Model.Blog.ViewCount</span>
+                    </div>
+
+                    <!-- Category -->
+                    @if (Model.Blog.Category != null)
+                    {
+                        <div class="mb-2">
+                            <i class="fas fa-folder text-primary"></i>
+                            <strong>Category:</strong>
+                            <span class="badge badge-primary">@Model.Blog.Category.Name</span>
+                        </div>
+                    }
+
+                    <!-- Status (for drafts or for author/admin) -->
+                    @if (Model.Blog.Status == LoginandRegisterMVC.Models.BlogStatus.Draft)
+                    {
+                        <div class="mb-2">
+                            <span class="badge badge-warning badge-lg">DRAFT</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Featured Image -->
+        <div class="blog-featured-image mb-4">
+            <img src="~/uploads/blogs/@Model.Blog.FeaturedImage" 
+                 class="img-fluid rounded shadow" 
+                 alt="@Model.Blog.Title"
+                 style="width: 100%; max-height: 500px; object-fit: cover;">
+        </div>
+
+        <!-- Blog Content -->
+        <div class="blog-content mb-5">
+            @Html.Raw(System.Net.WebUtility.HtmlEncode(Model.Blog.Content).Replace("\n", "<br />"))
+        </div>
+
+        <!-- Action Buttons (Edit/Delete for owner or admin) -->
+        @if (Model.CanEdit || Model.CanDelete)
+        {
+            <div class="blog-actions mb-4 pb-4 border-bottom">
+                <h5 class="mb-3">Manage This Blog</h5>
+                @if (Model.CanEdit)
+                {
+                    <a href="#" class="btn btn-primary mr-2">
+                        <i class="fas fa-edit"></i> Edit Blog
+                    </a>
+                }
+                @if (Model.CanDelete)
+                {
+                    <button class="btn btn-danger" onclick="confirmDelete(@Model.Blog.BlogId)">
+                        <i class="fas fa-trash"></i> Delete Blog
+                    </button>
+                }
+            </div>
+        }
+
+        <!-- Back to Blogs -->
+        <div class="mb-4">
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Blogs
+            </a>
+        </div>
+
+        <!-- Related Blogs -->
+        @if (Model.RelatedBlogs != null && Model.RelatedBlogs.Any())
+        {
+            <div class="related-blogs mt-5">
+                <h3 class="mb-4">
+                    <i class="fas fa-newspaper"></i> Related Blogs
+                </h3>
+                <div class="row">
+                    @foreach (var relatedBlog in Model.RelatedBlogs)
+                    {
+                        <div class="col-md-4 mb-4">
+                            <div class="card blog-card h-100 shadow-sm">
+                                <div class="blog-card-image">
+                                    <img src="~/uploads/blogs/@relatedBlog.FeaturedImage" 
+                                         class="card-img-top" 
+                                         alt="@relatedBlog.Title"
+                                         style="height: 150px; object-fit: cover;">
+                                </div>
+                                <div class="card-body">
+                                    @if (relatedBlog.Category != null)
+                                    {
+                                        <span class="badge badge-primary mb-2">@relatedBlog.Category.Name</span>
+                                    }
+                                    <h5 class="card-title">
+                                        @if (relatedBlog.Title.Length > 50)
+                                        {
+                                            @(relatedBlog.Title.Substring(0, 50) + "...")
+                                        }
+                                        else
+                                        {
+                                            @relatedBlog.Title
+                                        }
+                                    </h5>
+                                    <p class="card-text text-muted small">
+                                        @if (!string.IsNullOrEmpty(relatedBlog.Excerpt) && relatedBlog.Excerpt.Length > 80)
+                                        {
+                                            @(relatedBlog.Excerpt.Substring(0, 80) + "...")
+                                        }
+                                        else if (!string.IsNullOrEmpty(relatedBlog.Excerpt))
+                                        {
+                                            @relatedBlog.Excerpt
+                                        }
+                                    </p>
+                                    <a asp-action="Details" asp-route-id="@relatedBlog.BlogId" class="btn btn-sm btn-outline-primary btn-block">
+                                        <i class="fas fa-book-open"></i> Read More
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </article>
+</div>
+
+@section Scripts {
+    <script>
+        function confirmDelete(blogId) {
+            if (confirm('Are you sure you want to delete this blog? This action cannot be undone.')) {
+                // Will implement delete functionality in Phase 6
+                alert('Delete functionality will be implemented in the next phase.');
+            }
+        }
+
+        // Smooth scroll for back button
+        $('a[href^="#"]').on('click', function(event) {
+            var target = $(this.getAttribute('href'));
+            if (target.length) {
+                event.preventDefault();
+                $('html, body').stop().animate({
+                    scrollTop: target.offset().top - 100
+                }, 1000);
+            }
+        });
+    </script>
+}
+
+
