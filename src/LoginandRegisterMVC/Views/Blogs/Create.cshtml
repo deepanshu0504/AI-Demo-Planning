@@ -1,0 +1,235 @@
+@model LoginandRegisterMVC.Models.CreateBlogViewModel
+
+@{
+    ViewData["Title"] = Model.IsEdit ? "Edit Blog" : "Create Blog";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <h2 class="text-center mb-4">@ViewData["Title"]</h2>
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["SuccessMessage"]
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            }
+
+            <form asp-action="@(Model.IsEdit ? "Edit" : "Create")" asp-route-id="@Model.BlogId" method="post" enctype="multipart/form-data" id="blogForm">
+                @Html.AntiForgeryToken()
+                @if (Model.IsEdit)
+                {
+                    <input type="hidden" asp-for="BlogId" />
+                    <input type="hidden" asp-for="ExistingImage" />
+                }
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <!-- Title Field -->
+                <div class="form-group">
+                    <label asp-for="Title" class="control-label">Title <span class="text-danger">*</span></label>
+                    <input asp-for="Title" class="form-control" id="blogTitle" maxlength="100" />
+                    <small class="form-text text-muted">
+                        <span id="titleCounter">0</span>/100 characters
+                    </small>
+                    <span asp-validation-for="Title" class="text-danger"></span>
+                </div>
+
+                <!-- Content Field -->
+                <div class="form-group">
+                    <label asp-for="Content" class="control-label">Content <span class="text-danger">*</span></label>
+                    <textarea asp-for="Content" class="form-control" id="blogContent" rows="15" maxlength="10000"></textarea>
+                    <small class="form-text text-muted">
+                        <span id="contentCounter">0</span>/10,000 characters (minimum 50 characters)
+                    </small>
+                    <span asp-validation-for="Content" class="text-danger"></span>
+                </div>
+
+                <!-- Featured Image -->
+                <div class="form-group">
+                    <label asp-for="ImageFile" class="control-label">Featured Image @(Model.IsEdit ? "" : "<span class=\"text-danger\">*</span>")</label>
+                    
+                    @if (Model.IsEdit && !string.IsNullOrEmpty(Model.ExistingImage))
+                    {
+                        <div class="mb-3">
+                            <p class="text-muted">Current Image:</p>
+                            <img src="~/uploads/blogs/@Model.ExistingImage" alt="Current Image" class="img-thumbnail" style="max-width: 300px; max-height: 300px;" />
+                            <p class="text-muted mt-2"><small>Upload a new image to replace the current one</small></p>
+                        </div>
+                    }
+                    
+                    <div class="custom-file">
+                        <input type="file" class="custom-file-input" id="imageFile" name="ImageFile" accept=".jpg,.jpeg,.png,.gif" />
+                        <label class="custom-file-label" for="imageFile">Choose file...</label>
+                    </div>
+                    <small class="form-text text-muted">
+                        Accepted formats: JPG, JPEG, PNG, GIF. Maximum size: 5MB
+                    </small>
+                    <span asp-validation-for="ImageFile" class="text-danger"></span>
+                    
+                    <!-- Image Preview -->
+                    <div id="imagePreview" class="mt-3" style="display:none;">
+                        <img id="previewImg" src="#" alt="Image Preview" class="img-thumbnail" style="max-width: 300px; max-height: 300px;" />
+                        <button type="button" class="btn btn-sm btn-danger" id="removeImage">Remove Image</button>
+                    </div>
+                </div>
+
+                <!-- Category Field -->
+                <div class="form-group">
+                    <label asp-for="CategoryId" class="control-label">Category</label>
+                    <select asp-for="CategoryId" class="form-control">
+                        <option value="">Select a category (optional)</option>
+                        @if (Model.Categories != null)
+                        {
+                            @foreach (var category in Model.Categories)
+                            {
+                                <option value="@category.CategoryId">@category.Name</option>
+                            }
+                        }
+                    </select>
+                    <span asp-validation-for="CategoryId" class="text-danger"></span>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="form-group mt-4">
+                    <button type="submit" name="action" value="draft" class="btn btn-secondary btn-lg mr-2">
+                        <i class="fas fa-save"></i> Save as Draft
+                    </button>
+                    <button type="submit" name="action" value="publish" class="btn btn-primary btn-lg">
+                        <i class="fas fa-paper-plane"></i> Publish
+                    </button>
+                    <a asp-action="MyBlogs" class="btn btn-outline-secondary btn-lg ml-2">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/jquery.validate.min.js"></script>
+    <script src="~/js/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Character counter for title
+            function updateTitleCounter() {
+                var length = $('#blogTitle').val().length;
+                $('#titleCounter').text(length);
+                
+                if (length > 100) {
+                    $('#titleCounter').parent().addClass('text-danger');
+                } else if (length < 5) {
+                    $('#titleCounter').parent().addClass('text-warning');
+                } else {
+                    $('#titleCounter').parent().removeClass('text-danger text-warning').addClass('text-success');
+                }
+            }
+
+            // Character counter for content
+            function updateContentCounter() {
+                var length = $('#blogContent').val().length;
+                $('#contentCounter').text(length);
+                
+                if (length > 10000) {
+                    $('#contentCounter').parent().addClass('text-danger');
+                } else if (length < 50) {
+                    $('#contentCounter').parent().addClass('text-warning');
+                } else {
+                    $('#contentCounter').parent().removeClass('text-danger text-warning').addClass('text-success');
+                }
+            }
+
+            // Initialize counters
+            updateTitleCounter();
+            updateContentCounter();
+
+            // Update counters on input
+            $('#blogTitle').on('input', updateTitleCounter);
+            $('#blogContent').on('input', updateContentCounter);
+
+            // Image file input change
+            $('#imageFile').on('change', function (e) {
+                var file = e.target.files[0];
+                
+                if (file) {
+                    // Validate file size (5MB = 5 * 1024 * 1024 bytes)
+                    if (file.size > 5242880) {
+                        alert('File size must be less than 5MB');
+                        $(this).val('');
+                        $('#imagePreview').hide();
+                        return;
+                    }
+
+                    // Validate file type
+                    var validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+                    if (!validTypes.includes(file.type)) {
+                        alert('Only JPG, JPEG, PNG, and GIF formats are allowed');
+                        $(this).val('');
+                        $('#imagePreview').hide();
+                        return;
+                    }
+
+                    // Update label
+                    $('.custom-file-label').text(file.name);
+
+                    // Show preview
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        $('#previewImg').attr('src', e.target.result);
+                        $('#imagePreview').show();
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    $('.custom-file-label').text('Choose file...');
+                    $('#imagePreview').hide();
+                }
+            });
+
+            // Remove image button
+            $('#removeImage').on('click', function () {
+                $('#imageFile').val('');
+                $('.custom-file-label').text('Choose file...');
+                $('#imagePreview').hide();
+            });
+
+            // Form submission validation
+            $('#blogForm').on('submit', function (e) {
+                var title = $('#blogTitle').val();
+                var content = $('#blogContent').val();
+                var imageFile = $('#imageFile').val();
+
+                // Validate title
+                if (title.length < 5 || title.length > 100) {
+                    alert('Title must be between 5 and 100 characters');
+                    e.preventDefault();
+                    return false;
+                }
+
+                // Validate content
+                if (content.length < 50 || content.length > 10000) {
+                    alert('Content must be between 50 and 10,000 characters');
+                    e.preventDefault();
+                    return false;
+                }
+
+                // Validate image (only for create, not edit)
+                @if (!Model.IsEdit)
+                {
+                    <text>
+                    if (!imageFile) {
+                        alert('Please select a featured image');
+                        e.preventDefault();
+                        return false;
+                    }
+                    </text>
+                }
+
+                return true;
+            });
+        });
+    </script>
+}
+

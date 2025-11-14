@@ -46,6 +46,8 @@ builder.Services.AddSession(options =>
 
 // Add services
 builder.Services.AddScoped<IPasswordHashService, PasswordHashService>();
+builder.Services.AddScoped<IImageService, ImageService>();
+builder.Services.AddScoped<IBlogService, BlogService>();
 
 // Add runtime compilation for development
 if (builder.Environment.IsDevelopment())
@@ -54,6 +56,22 @@ if (builder.Environment.IsDevelopment())
 }
 
 var app = builder.Build();
+
+// Seed categories
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<UserContext>();
+        await CategorySeeder.SeedCategoriesAsync(context);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while seeding categories.");
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

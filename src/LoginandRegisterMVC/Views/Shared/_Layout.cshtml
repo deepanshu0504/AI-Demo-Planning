@@ -6,6 +6,7 @@
     <title>@ViewData["Title"] - Login Demo</title>
     <link href="~/css/bootstrap.min.css" rel="stylesheet" />
     <link href="~/css/Site.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
     <script src="~/js/modernizr-2.8.3.js"></script>
 </head>
 <body>
@@ -18,19 +19,59 @@
         </button>
         <div class="navbar-collapse collapse" id="navbarNav">
             <ul class="nav navbar-nav ml-auto">
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Users" asp-action="Index">Home</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Users" asp-action="Login">Login</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Users" asp-action="Register">Signup</a>
-                </li>
                 @if (Context.Session.GetString("UserId") != null)
                 {
-                    <li class="navbar-right nav-item">
-                        <a class="nav-link" asp-controller="Users" asp-action="Logout">Logout</a>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Users" asp-action="Index">
+                            <i class="fas fa-home"></i> Home
+                        </a>
+                    </li>
+                }
+                
+                <!-- Blogs - Public (visible to all) -->
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Blogs" asp-action="Index">
+                        <i class="fas fa-newspaper"></i> Blogs
+                    </a>
+                </li>
+
+                @if (Context.Session.GetString("UserId") != null)
+                {
+                    <!-- My Blogs - Authenticated users only -->
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Blogs" asp-action="MyBlogs">
+                            <i class="fas fa-book"></i> My Blogs
+                        </a>
+                    </li>
+                    
+                    <!-- Create Blog - Authenticated users only -->
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Blogs" asp-action="Create">
+                            <i class="fas fa-plus-circle"></i> Create Blog
+                        </a>
+                    </li>
+                    
+                    <!-- Logout -->
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Users" asp-action="Logout">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </li>
+                }
+                else
+                {
+                    <!-- Login - Guest users -->
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Users" asp-action="Login">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </a>
+                    </li>
+                    
+                    <!-- Signup - Guest users -->
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Users" asp-action="Register">
+                            <i class="fas fa-user-plus"></i> Signup
+                        </a>
                     </li>
                 }
             </ul>
